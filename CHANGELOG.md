@@ -1,3 +1,6 @@
+## 0.2.0
+- migrate to dart:js_interop and package:web from legacy dart:js and dart:html
+
 ## 0.1.5
 * bump miniaudio version to 0.11.21
 
