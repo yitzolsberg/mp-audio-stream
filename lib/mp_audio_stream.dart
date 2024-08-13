@@ -1,6 +1,4 @@
 /// A multi-platform audio stream output library for real-time generated wave data
-library audio_stream;
-
 import 'dart:typed_data';
 
 import 'src/mp_audio_stream_mastream.dart'
