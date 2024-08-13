@@ -1,14 +1,10 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:web/web.dart' as web;
+import 'package:web/web.dart' show document, HTMLScriptElement;
 
 import '../mp_audio_stream.dart' as mpaudio;
-
-Future<String> _jsText() async =>
-    await rootBundle.loadString('packages/mp_audio_stream/js/audio_stream.js');
 
 extension type JSAudioStream(JSObject _) implements JSObject {
   external void init(
@@ -38,18 +34,16 @@ class AudioStreamImpl extends mpaudio.AudioStream {
 
     (() async {
       while (_stream == null) {
-        await Future.delayed(const Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 100));
       }
       fn(_stream!);
     })();
   }
 
   AudioStreamImpl() {
-    _jsText().then((value) {
-      final scriptTag = web.document.createElement('script');
-      scriptTag.text = value;
-      web.document.head?.append(scriptTag);
-    });
+    final scriptTag = document.createElement('script') as HTMLScriptElement;
+    scriptTag.src = "/assets/packages/mp_audio_stream/js/audio_stream.js";
+    document.head?.append(scriptTag);
   }
 
   @override
