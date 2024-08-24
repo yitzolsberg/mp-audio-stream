@@ -26,6 +26,8 @@ external JSAudioStream? get _stream;
 
 /// Contol class for AudioStream on web platform. Use `getAudioStream()` to get its instance.
 class AudioStreamImpl extends mpaudio.AudioStream {
+  int channels = 1;
+
   void delay(Function(JSAudioStream) fn) {
     if (_stream != null) {
       fn(_stream!);
@@ -52,9 +54,10 @@ class AudioStreamImpl extends mpaudio.AudioStream {
       int waitingBufferMilliSec = 100,
       int channels = 1,
       int sampleRate = 44100}) {
+    this.channels = channels;
     delay((s) => s.init(
-        channels * (bufferMilliSec * sampleRate / 1000) as int,
-        channels * (waitingBufferMilliSec * sampleRate / 1000) as int,
+        channels * (bufferMilliSec * sampleRate ~/ 1000),
+        channels * (waitingBufferMilliSec * sampleRate ~/ 1000),
         channels,
         sampleRate));
     return 0;
@@ -72,6 +75,9 @@ class AudioStreamImpl extends mpaudio.AudioStream {
 
   @override
   int push(Float32List buf) {
+    if (buf.length % channels != 0) {
+      return -1;
+    }
     delay((s) => s.push(buf.toJS));
     return 0;
   }
