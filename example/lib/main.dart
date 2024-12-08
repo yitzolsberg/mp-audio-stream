@@ -35,23 +35,36 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static const sampleRate = 11025;
+  static const sampleRate = 44100;
 
-  late final AudioStream audioStream;
+  late AudioStream audioStream;
 
   AudioStreamStat stat = AudioStreamStat.empty();
 
   bool _isPlaying = false;
 
-  @override
-  void initState() {
-    super.initState();
+  void _initStream() {
+    print("init stream");
     audioStream = getAudioStream();
+
     audioStream.init(
         sampleRate: sampleRate,
         channels: 1,
-        bufferMilliSec: 1000,
-        waitingBufferMilliSec: 100);
+        bufferMilliSec: 600,
+        waitingBufferMilliSec: 30);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initStream();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    audioStream.uninit();
+    _initStream();
   }
 
   @override
@@ -60,13 +73,13 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  static Float32List _synthSineWave(
+  static List<double> _synthSineWave(
       double freq, int sampleRate, Duration duration) {
     final length = duration.inMilliseconds * sampleRate ~/ 1000;
     final sineWave = List.generate(length,
         (i) => math.sin(2 * math.pi * ((i * freq) % sampleRate) / sampleRate));
 
-    return Float32List.fromList(sineWave);
+    return sineWave;
   }
 
   void _onPressed() async {
@@ -76,19 +89,32 @@ class _MyHomePageState extends State<MyHomePage> {
     audioStream.resume();
 
     const noteDuration = Duration(seconds: 1);
-    const pushFreq = 60; // Hz
 
+    const balanceAmount = 60 * sampleRate ~/ 1000;
+
+    var lastCount = 0;
+
+    var waves = <double>[];
     for (double noteFreq in [261.626, 293.665, 329.628]) {
-      final wave = _synthSineWave(noteFreq, sampleRate, noteDuration);
+      final wavePart = _synthSineWave(noteFreq, sampleRate, noteDuration);
+      waves.addAll(wavePart);
+    }
 
-      // push wave data to audio stream in specified interval (pushFreq)
-      const step = sampleRate ~/ pushFreq;
-      for (int pos = 0; pos < wave.length; pos += step) {
-        audioStream.push(wave.sublist(pos, math.min(wave.length, pos + step)));
+    var wave = Float32List.fromList(waves);
+    var pos = 0;
+    while (pos < wave.length) {
+      var amountToSend = math.max(100, balanceAmount - lastCount);
+      amountToSend = math.min(amountToSend, wave.length - pos);
 
-        setState(() => stat = audioStream.stat());
-        await Future.delayed(noteDuration ~/ pushFreq);
-      }
+      var newLastCount =
+          audioStream.push(wave.sublist(pos, pos + amountToSend));
+      var usedAmount = lastCount + amountToSend - newLastCount;
+      lastCount = newLastCount;
+      print(
+          "Used: $usedAmount, In buffer: ${lastCount - amountToSend}, sent: $amountToSend");
+      setState(() => stat = audioStream.stat());
+      pos += amountToSend;
+      await Future.delayed(const Duration(milliseconds: 10));
     }
 
     setState(() => _isPlaying = false);

@@ -89,7 +89,7 @@ int ma_stream_push(float* buf, int length) {
 
     _ctx->buf_end += length;
 
-    return 0;
+    return _ctx->buf_end - _ctx->buf_start;
 }
 
 ma_uint32 ma_stream_stat_exhaust_count() {
