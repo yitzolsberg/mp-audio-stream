@@ -25,7 +25,7 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    namespace 'uk.yitz.dev.mp-audio-stream'
+    namespace 'com.example.mp_audio_stream'
     compileSdkVersion 31
 
     // Bumping the plugin ndkVersion requires all clients of this plugin to bump
